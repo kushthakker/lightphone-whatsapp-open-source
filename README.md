@@ -67,7 +67,7 @@ supported for real messages.
 
 ```bash
 git clone YOUR_REPOSITORY_CLONE_URL
-cd lightphone-whatsapp
+cd lightphone-whatsapp-open-source
 ./scripts/init-env.sh https://whatsapp.example.com
 ```
 
