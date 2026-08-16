@@ -37,15 +37,15 @@ These are release-operator checks, not claims about CI coverage.
 | Gate | Status |
 | --- | --- |
 | Sanitized clean source history and local build | Passed on 2026-08-16; clean root commit and Android/Go/privacy checks passed |
-| Clean-repository CI and signed prerelease | CI running on the final private repository; signed prerelease pending |
+| Clean-repository CI and signed prerelease | Passed on 2026-08-16; CI run `31932407322` and signed `v0.11.2-rc.1` prerelease |
 | Local Compose/auth/persistence and privacy scans | Passed on 2026-08-15 |
-| Clean clone from the final private repository | Passed on 2026-08-16; repeat after the release tag |
-| Signed APK verification | Pending final clean-repository release |
+| Clean clone from the final repository | Passed privately and anonymously after publication on 2026-08-16 |
+| Signed APK verification | Passed for `v0.11.2-rc.1`: checksum, package/version, V3 certificate, and privacy scan |
 | Dedicated test-account message matrix | Pending |
 | Physical LP3 lifecycle | Passed: configuration QR, HTTPS path, process restart, bridge restart, and reboot |
 | Physical LP3 six-direction message matrix | Pending |
 | Signed install-over test | Passed for two same-package, same-key prerelease builds; final clean-repository APK still requires verification |
-| Public clone and public release download | Pending until all private gates pass |
+| Public clone and public release download | Passed anonymously on 2026-08-16 |
 
 ## Signing
 
