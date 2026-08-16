@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: Test and vet
+        working-directory: server
+        run: |
+          go test -race ./...
+          go vet ./...
+      - name: Build container
+        run: docker build --pull --tag lp3-whatsapp-bridge:test server
+
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - name: Fetch pinned Light SDK
+        run: |
+          git clone https://github.com/lightphone/light-sdk.git sdk
+          git -C sdk checkout --detach 522f94d5e862bd8824b43f3dfc76221105b720d5
+          rsync -a --delete tool/ sdk/tool/
+      - name: Test, lint, and assemble
+        working-directory: sdk
+        run: ./gradlew --no-daemon --build-cache :tool:testDebugUnitTest :tool:lintDebug :tool:assembleDebug
+      - name: Scan APK
+        run: ./scripts/scan-apk.sh sdk/tool/build/outputs/apk/debug/tool-debug.apk
+
+  privacy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Repository privacy scan
+        run: ./scripts/privacy-scan.sh .
+      - uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Shell syntax
+        run: bash -n scripts/*.sh
+      - name: Compose syntax
+        run: cp .env.example .env && docker compose config >/dev/null

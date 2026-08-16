@@ -1,0 +1,73 @@
+name: lp3-whatsapp-bridge
+
+services:
+  bridge:
+    build:
+      context: ./server
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      LISTEN_ADDR: 0.0.0.0:8080
+      DATABASE_PATH: /data/bridge.db
+    expose:
+      - "8080"
+    ports:
+      - "127.0.0.1:${BRIDGE_PORT:-8080}:8080"
+    volumes:
+      - bridge-data:/data
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/bridge", "-healthcheck", "http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    profiles: ["caddy"]
+    restart: unless-stopped
+    depends_on:
+      bridge:
+        condition: service_healthy
+    environment:
+      DOMAIN: ${DOMAIN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.8.1
+    profiles: ["cloudflare"]
+    restart: unless-stopped
+    depends_on:
+      bridge:
+        condition: service_healthy
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  bridge-data:
+  caddy-data:
+  caddy-config:
